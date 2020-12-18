@@ -1,0 +1,136 @@
+---
+title: "The Price of Weather"
+author: "Sampson Wescoatt"
+date: "12/17/2020"
+output: html_document
+---
+
+## Synopsis
+
+***
+
+## Data Processing
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+Data for this assignment is provided in .bz2 compressed file format, so I used the read.csv() function to extract the data and load it into memory as a tibble using the dplyr library for effective data manipulation.
+
+```{r, cache = TRUE}
+## The dplyr library in tidyverse provides simple, effective data processing.
+library(dplyr)
+
+## The read.csv() function can take .bz2 files directly.
+sdata <- as_tibble(read.csv("./repdata_data_StormData.csv.bz2"))
+```
+
+***
+
+## Analysis
+
+** Across the United States, which types of events are the most harmful with respect to population health? **
+
+To evaluate this question, I grouped the raw data by event type and counted the fatalities and injuries by event type.
+
+```{r}
+library(tidyr)
+
+fatal_data <- sdata %>% 
+  
+  ## Select the appropriate metrics
+  select(EVTYPE, FATALITIES, INJURIES) %>% 
+  
+  ## Group by event
+  group_by(event = EVTYPE) %>%
+  
+  ## Produce summary of harm
+  summarize(
+    fatalities = sum(FATALITIES, na.rm = TRUE),
+    injuries = sum(INJURIES, na.rm = TRUE),
+    total = fatalities + injuries) %>%
+  
+  ## Categorize totals by type
+  pivot_longer(cols = c("fatalities", "injuries"), 
+               names_to = "type", values_to = "count") %>%
+  
+  ## Sort by most total fatalities + injuries
+  arrange(desc(total)) %>%
+  
+  ## Select the top 15 events (x2 rows per event)
+  head(30)
+```
+
+
+** Across the United States, which types of events have the greatest economic consequences? **
+
+To answer this question, I group the raw data by event type once more, and summarized the property and crop damage.
+
+```{r}
+econ_dmg <- sdata %>%
+  
+  ## Select the appropriate metrics
+  select(EVTYPE, PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP) %>%
+  
+  ## Multiply base by exponent
+  mutate(prop_total = ifelse(PROPDMGEXP == "B", PROPDMG * 1000000000,
+                          ifelse(PROPDMGEXP == "M", PROPDMG * 1000000,
+                              ifelse(PROPDMGEXP == "K", PROPDMG * 1000, 
+                                     PROPDMG)))) %>%
+  
+  ## Perform the same conversion for crop damage
+  mutate(crop_total = ifelse(CROPDMGEXP == "B", CROPDMG * 1000000000,
+                          ifelse(CROPDMGEXP == "M", CROPDMG * 1000000,
+                              ifelse(CROPDMGEXP == "K", CROPDMG * 1000, 
+                                     CROPDMG)))) %>%
+  
+  ## Group by event type
+  group_by(event = EVTYPE) %>%
+  
+  ## Summarize by total damage
+  summarize(prop_dmg = sum(prop_total, na.rm = TRUE),
+            crop_dmg = sum(crop_total, na.rm = TRUE),
+            dmg_total = prop_dmg + crop_dmg) %>%
+  
+  ## Categorize totals by type
+  pivot_longer(cols = c("prop_dmg", "crop_dmg"),
+               names_to = "type", values_to = "cost") %>%
+  
+  ## Sort by highest cost
+  arrange(desc(dmg_total)) %>%
+  
+  ## Select the top 15 (x2 rows per event)
+  head(30)
+```
+
+
+***
+
+## Results
+
+```{r}
+library(ggplot2)
+
+fatal_plot <- ggplot(fatal_data, aes(count, event, fill = type)) + 
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Effects of Severe Weather on Population Health",
+       subtitle = "Top 15 Weather Events by Fatalities & Injuries",
+       caption = "Data from the NOAA Storm Database",
+       x = "",
+       y = "")
+
+print(fatal_plot)
+```
+
+
+```{r}
+econ_plot <- ggplot(econ_dmg, aes(cost, event, fill = type)) + 
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Economic Impact of Severe Weather Events",
+       subtitle = "Top 15 Weather Events by Property & Crop Damage",
+       caption = "Data from the NOAA Storm Database",
+       x = "",
+       y = "")
+
+print(econ_plot)
+```
