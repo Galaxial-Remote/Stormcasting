@@ -7,6 +7,10 @@ output: html_document
 
 ## Synopsis
 
+Storms and other severe weather events can cause both public health and economic problems for communities and municipalities. Many severe events can result in fatalities, injuries, and property damage, and preventing such outcomes to the extent possible is a key concern.
+
+This project involves exploring the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage.
+
 ***
 
 ## Data Processing
@@ -17,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
 Data for this assignment is provided in .bz2 compressed file format, so I used the read.csv() function to extract the data and load it into memory as a tibble using the dplyr library for effective data manipulation.
 
-```{r, cache = TRUE}
+```{r}
 ## The dplyr library in tidyverse provides simple, effective data processing.
 library(dplyr)
 
@@ -25,13 +29,10 @@ library(dplyr)
 sdata <- as_tibble(read.csv("./repdata_data_StormData.csv.bz2"))
 ```
 
-***
 
-## Analysis
+**Across the United States, which types of events are the most harmful with respect to population health?**
 
-** Across the United States, which types of events are the most harmful with respect to population health? **
-
-To evaluate this question, I grouped the raw data by event type and counted the fatalities and injuries by event type.
+To evaluate this question, I grouped the raw data by event type and counted the fatalities and injuries to rank the total impact to human life caused by each event.
 
 ```{r}
 library(tidyr)
@@ -62,9 +63,9 @@ fatal_data <- sdata %>%
 ```
 
 
-** Across the United States, which types of events have the greatest economic consequences? **
+**Across the United States, which types of events have the greatest economic consequences?**
 
-To answer this question, I group the raw data by event type once more, and summarized the property and crop damage.
+To answer this question, I grouped the raw data by event type once more, and summarized the property and crop damage to determine total cost of each event. The cost notation is stored in separate columns for base number and exponent(K for thousands, M for millions, etc.) and required a transformation to find the actual value, performed through nested conditional tests.
 
 ```{r}
 econ_dmg <- sdata %>%
@@ -108,6 +109,8 @@ econ_dmg <- sdata %>%
 
 ## Results
 
+The plot below shows the top 15 most harmful events to population health on record, determined by the total fatalities and injuries. Clearly, Tornadoes have had a more significant impact on human life by a large margin.
+
 ```{r}
 library(ggplot2)
 
@@ -121,6 +124,9 @@ fatal_plot <- ggplot(fatal_data, aes(count, event, fill = type)) +
 
 print(fatal_plot)
 ```
+
+
+The second plot shows the top 15 most economically harmful event types on record, as determined by the total cost in property and crop damage. Clearly, floods have lead in damage to property damage, with hurricanes and tornadoes following in second and third, respectively.  Notably, droughts produce the highest crop damage.
 
 
 ```{r}
